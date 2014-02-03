@@ -1,4 +1,5 @@
 # Extra bash completion helper functions.
+# Requires bash version >= 4
 
 ## LICENSE
 # This program is free software; you can redistribute it and/or
@@ -56,7 +57,6 @@ _filedir_rooted()
             xspec=${2:+"!*.@($2|$(printf %s $2 | tr '[:lower:]' '[:upper:]'))"}
         toks=( ${toks[@]-} $( compgen -f -X "$xspec" -- $quoted) )
     fi
-    [ ${#toks[@]} -ne 0 ] && _compopt_o_filenames
     # If the filter failed to produce anything, try w/o it (LP: #533985)
     if [[ -n "$2" ]] && [[ "$2" != -d ]] && [[ ${#toks[@]} -lt 1 ]] ; then
         toks=( ${toks[@]-} $( compgen -f -X -- $quoted) )

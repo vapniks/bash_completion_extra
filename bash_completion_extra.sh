@@ -24,8 +24,6 @@
 # other functions in that file, so you should make sure that /etc/bash_completion has been sourced first.
 # The function should not be used directly (it takes different arguments to normal completion functions),
 # but should be called by another completion function.
-# NOTE: you probably want to use the nospace and filenames options with complete, e.g:
-#   complete -o nospace -o filenames -F _myfunc mycmd
 # @param $1  The directory to start in.
 # @param $2  If `-d', complete only on directories.  Otherwise filter/pick only
 #            completions with `.$1' and the uppercase version of it as file
@@ -70,6 +68,7 @@ _filedir_rooted()
             toks[$i]=${toks[$i]}/
         fi
     done
+    compopt -o nospace -o filenames    
     # Remove basedir from completions
     COMPREPLY=( "${COMPREPLY[@]}" "${toks[@]/$1\//}" )
 }

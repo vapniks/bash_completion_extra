@@ -72,3 +72,14 @@ _filedir_rooted()
     # Remove basedir from completions
     COMPREPLY=( "${COMPREPLY[@]}" "${toks[@]/$1\//}" )
 }
+
+
+# Set current list of completions to the list of network interfaces
+_network-interfaces() 
+{
+    local cur opts
+    COMPREPLY=() # reset completion list
+    cur="${COMP_WORDS[COMP_CWORD]}" # current word at cursor
+    opts=`ls /sys/class/net`
+    COMPREPLY=( $(compgen -W "$opts" -- ${cur}) )
+}

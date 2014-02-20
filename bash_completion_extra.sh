@@ -87,6 +87,7 @@ _network_interfaces()
 
 # Set current list of completions to all shell variables whose names
 # match the regular expression used as the first argument.
+# If a second argument is supplied then quote the variables.
 _matching_variables()
 {
     local cur opts allvars matches
@@ -99,7 +100,11 @@ _matching_variables()
             matches+=("$var")
         fi
     done
-    #matches=${matches[@]/#/$}
-    COMPREPLY=( $(compgen -P "$" -W "$matches" -- ${cur}) )
+    if [ $2 ]; then
+        cur2=${cur##\"$}
+        COMPREPLY=( $(compgen -P "\"$" -S "\"" -W "${matches[*]}" -- ${cur2}) )
+    else
+        COMPREPLY=( $(compgen -P "$" -W "$matches" -- ${cur}) )
+    fi
 }
 

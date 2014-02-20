@@ -90,7 +90,7 @@ _network_interfaces()
 # If a second argument is supplied then quote the variables.
 _matching_variables()
 {
-    local cur opts allvars matches
+    local cur cur2 allvars matches
     COMPREPLY=() # reset completion list
     cur="${COMP_WORDS[COMP_CWORD]}" # current word at cursor
     allvars=(`compgen -v`)

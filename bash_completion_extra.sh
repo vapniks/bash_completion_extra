@@ -75,7 +75,8 @@ _filedir_rooted()
 
 
 # Set current list of completions to the list of network interfaces
-_network-interfaces() 
+# (there is also _available_interfaces, but it doesn't work well for me).
+_network_interfaces() 
 {
     local cur opts
     COMPREPLY=() # reset completion list
@@ -83,3 +84,22 @@ _network-interfaces()
     opts=`ls /sys/class/net`
     COMPREPLY=( $(compgen -W "$opts" -- ${cur}) )
 }
+
+# Set current list of completions to all shell variables whose names
+# match the regular expression used as the first argument.
+_matching_variables()
+{
+    local cur opts allvars matches
+    COMPREPLY=() # reset completion list
+    cur="${COMP_WORDS[COMP_CWORD]}" # current word at cursor
+    allvars=(`compgen -v`)
+    matches=()
+    for var in ${allvars[@]}; do
+        if [[ "$var" =~ $1 ]]; then
+            matches+=("$var")
+        fi
+    done
+    #matches=${matches[@]/#/$}
+    COMPREPLY=( $(compgen -P "$" -W "$matches" -- ${cur}) )
+}
+

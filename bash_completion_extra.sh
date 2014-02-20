@@ -104,7 +104,8 @@ _matching_variables()
         cur2=${cur##\"$}
         COMPREPLY=( $(compgen -P "\"$" -S "\"" -W "${matches[*]}" -- ${cur2}) )
     else
-        COMPREPLY=( $(compgen -P "$" -W "$matches" -- ${cur}) )
+        cur2=${cur##$}        
+        COMPREPLY=( $(compgen -P "$" -W "$matches" -- ${cur2}) )
     fi
 }
 

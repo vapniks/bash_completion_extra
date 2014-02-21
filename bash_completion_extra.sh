@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Extra bash completion helper functions.
 # Requires bash version >= 4
 
@@ -20,59 +22,57 @@
 
 ## CODE
 
-# This function performs completion of file paths rooted at a user specified directory
-# Most of the code is copied from _filedir in /etc/bash_completion, and it depends on some
-# other functions in that file, so you should make sure that /etc/bash_completion has been sourced first.
+# This function performs completion of file paths rooted at a user specified directory,
+# and allows filtering of those completions by regular expressions.
+# It depends on some functions in /etc/bash_completion so you need to make sure that file has
+# been sourced first.
 # The function should not be used directly (it takes different arguments to normal completion functions),
 # but should be called by another completion function.
+#
 # @param $1  The directory to start in.
-# @param $2  If `-d', complete only on directories.  Otherwise filter/pick only
-#            completions with `.$1' and the uppercase version of it as file
-#            extension.
-_filedir_rooted()
+# @param $2  A regular expression matching filenames/dirs to keep in the completions
+#            (after first param has been removed from their pathnames)
+# @param $3  A regular expression matching filenames/dirs to remove from the completions
+#            (after first param has been removed from their pathnames)
+#
+# EXAMPLE 
+#     complete jpeg files and non-hidden directories within ~/temp: _firedir_rooted ~/temp "(.jpg|.JPG|/)$" "^\."
+
+_filedir_rooted_filtered()
 {
-    local i IFS=$'\n' cur="${COMP_WORDS[COMP_CWORD]}" xspec
+    #debugme set -x
+    local i IFS=$'\n' cur="${COMP_WORDS[COMP_CWORD]}" 
     _tilde "$cur" || return 0
-    local -a toks # array to hold filepath completions
-    local quoted tmp
+    local -a dirs files files2 all all2 all3 i elem
+    local quoted
     # _quote_readline_by_ref should be defined in /etc/bash_completion
     _quote_readline_by_ref "$1/$cur" quoted
-    toks=( ${toks[@]-} $(
-        compgen -d -- "$quoted" | {
-            while read -r tmp; do
-                # TODO: I have removed a "[ -n $tmp ] &&" before 'printf ..',
-                #       and everything works again. If this bug suddenly
-                #       appears again (i.e. "cd /b<TAB>" becomes "cd /"),
-                #       remember to check for other similar conditionals (here
-                #       and _filedir_xspec()). --David
-                printf '%s\n' $tmp
-            done
-        }
-    ))
-    # Filter file extensions 
-    if [[ "$2" != -d ]]; then
-        # Munge xspec to contain uppercase version too
-        [[ ${BASH_VERSINFO[0]} -ge 4 ]] && \
-            xspec=${2:+"!*.@($2|${2^^})"} || \
-            xspec=${2:+"!*.@($2|$(printf %s $2 | tr '[:lower:]' '[:upper:]'))"}
-        toks=( ${toks[@]-} $( compgen -f -X "$xspec" -- $quoted) )
-    fi
-    # If the filter failed to produce anything, try w/o it (LP: #533985)
-    if [[ -n "$2" ]] && [[ "$2" != -d ]] && [[ ${#toks[@]} -lt 1 ]] ; then
-        toks=( ${toks[@]-} $( compgen -f -X -- $quoted) )
-    fi
-    # Put / at end of directory names
-    for (( i = 0 ; i < ${#toks[@]} ; i++ )) 
-    do
-        if [ -d ${toks[$i]} ]; then
-            toks[$i]=${toks[$i]}/
+
+    all=( $( compgen -f -- "$quoted" ) )
+    # Add / to end of directory names
+    for (( i = 0 ; i < "${#all[@]}" ; i++ )); do
+        if [[ -d "${all[$i]}" ]]; then
+            all[$i]="${all[$i]}/"
         fi
     done
-    compopt -o nospace -o filenames    
-    # Remove basedir from completions
-    COMPREPLY=( "${COMPREPLY[@]}" "${toks[@]/$1\//}" )
+    # Remove 1st arg from paths (so we can do regexp matching)
+    all=( "${all[@]/$1\//}" )
+    # Keep only files/dirs matching 2nd arg
+    for elem in "${all[@]}"; do
+        if ( [[ -z "$2" ]] || [[ "$elem" =~ $2  ]] ); then
+            all2+=("$elem")
+        fi
+    done
+    # Remove files/dirs matching 3rd arg
+    for elem in "${all2[@]}"; do
+        if [[ -z "$3" ]] || ! [[ "$elem" =~ $3 ]]; then
+            all3+=("$elem")
+        fi
+    done
+    # Don't put space after completions (want to be able to continue completing)
+    compopt -o nospace -o filenames
+    COMPREPLY=( "${COMPREPLY[@]}" "${all3[@]}" )
 }
-
 
 # Set current list of completions to the list of network interfaces
 # (there is also _available_interfaces, but it doesn't work well for me).

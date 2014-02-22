@@ -43,7 +43,11 @@ _filedir_rooted_filtered()
     #debugme set -x
     local i IFS=$'\n' cur="${COMP_WORDS[COMP_CWORD]}" 
     _tilde "$cur" || return 0
-    local -a dirs files files2 all all2 all3 i elem
+    local -a all all2 all3 i elem
+    # Make sure arrays are all empty initially
+    all = ()
+    all2 = ()
+    all3 = ()
     local quoted
     # _quote_readline_by_ref should be defined in /etc/bash_completion
     _quote_readline_by_ref "$1/$cur" quoted
@@ -59,7 +63,7 @@ _filedir_rooted_filtered()
     all=( "${all[@]/$1\//}" )
     # Keep only files/dirs matching 2nd arg
     for elem in "${all[@]}"; do
-        if ( [[ -z "$2" ]] || [[ "$elem" =~ $2  ]] ); then
+        if [[ -z "$2" ]] || [[ "$elem" =~ $2  ]]; then
             all2+=("$elem")
         fi
     done
@@ -82,7 +86,7 @@ _network_interfaces()
     COMPREPLY=() # reset completion list
     cur="${COMP_WORDS[COMP_CWORD]}" # current word at cursor
     opts=`ls /sys/class/net`
-    COMPREPLY=( $(compgen -W "$opts" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "$opts" -- "${cur}") )
 }
 
 # Set current list of completions to all shell variables whose names
@@ -90,22 +94,33 @@ _network_interfaces()
 # If a second argument is supplied then quote the variables.
 _matching_variables()
 {
-    local cur cur2 allvars matches
+    local cur cur2 var
+    local -a allvars matches matches2
     COMPREPLY=() # reset completion list
     cur="${COMP_WORDS[COMP_CWORD]}" # current word at cursor
+    # Make sure arrays are properly initialized
     allvars=(`compgen -v`)
     matches=()
-    for var in ${allvars[@]}; do
-        if [[ "$var" =~ $1 ]]; then
+    matches2=()
+    # Keep only variables matching 1st arg
+    for var in "${allvars[@]}"; do
+        if ( [[ -z "$1" ]] || [[ "$var" =~ $1 ]] ); then
             matches+=("$var")
         fi
     done
-    if [ $2 ]; then
+    # Remove variables matching 2nd arg
+    for var in "${matches[@]}"; do
+        if ( [[ -z "$2" ]] || ! [[ "$var" =~ $2 ]] ); then
+            matches2+=("$var")
+        fi
+    done
+    # If there's a 3rd arg then quote the variables 
+    if [ -n "$3" ]; then
         cur2=${cur##\"$}
-        COMPREPLY=( $(compgen -P "\"$" -S "\"" -W "${matches[*]}" -- ${cur2}) )
-    else
-        cur2=${cur##$}        
-        COMPREPLY=( $(compgen -P "$" -W "$matches" -- ${cur2}) )
+        COMPREPLY=( $(compgen -P "\"$" -S "\"" -W "${matches[*]}" -- "${cur2}") )
+    else # otherwise don't quote them (but put a $ at the beginning of their names)
+        cur2=${cur##$}
+        COMPREPLY=( $(compgen -P "$" -W "$matches" -- "${cur2}") )
     fi
 }
 

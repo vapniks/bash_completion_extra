@@ -90,8 +90,10 @@ _network_interfaces()
 }
 
 # Set current list of completions to all shell variables whose names
-# match the regular expression used as the first argument.
-# If a second argument is supplied then quote the variables.
+# match the regexp in the 2nd argument, but not the one in the
+# 3rd argument. The 1st argument indicates whether the completions should
+# be quoted or not - if it is y then they will be quoted, otherwise
+# they wont be.
 _matching_variables()
 {
     local cur cur2 var
@@ -102,25 +104,25 @@ _matching_variables()
     allvars=(`compgen -v`)
     matches=()
     matches2=()
-    # Keep only variables matching 1st arg
+    # Keep only variables matching 2nd arg
     for var in "${allvars[@]}"; do
-        if ( [[ -z "$1" ]] || [[ "$var" =~ $1 ]] ); then
+        if [[ -z "$2" ]] || [[ "$var" =~ $2 ]]; then
             matches+=("$var")
         fi
     done
-    # Remove variables matching 2nd arg
+    # Remove variables matching 3rd arg
     for var in "${matches[@]}"; do
-        if ( [[ -z "$2" ]] || ! [[ "$var" =~ $2 ]] ); then
+        if [[ -z "$3" ]] || ! [[ "$var" =~ $3 ]] ; then
             matches2+=("$var")
         fi
     done
-    # If there's a 3rd arg then quote the variables 
-    if [ -n "$3" ]; then
+    # If 1st arg is t then quote the variables 
+    if [[ "$1" == y ]]; then
         cur2=${cur##\"$}
-        COMPREPLY=( $(compgen -P "\"$" -S "\"" -W "${matches[*]}" -- "${cur2}") )
+        COMPREPLY=( $(compgen -P "\"$" -S "\"" -W "${matches2[*]}" -- "${cur2}") )
     else # otherwise don't quote them (but put a $ at the beginning of their names)
         cur2=${cur##$}
-        COMPREPLY=( $(compgen -P "$" -W "$matches" -- "${cur2}") )
+        COMPREPLY=( $(compgen -P "$" -W "${matches2[*]}" -- "${cur2}") )
     fi
 }
 

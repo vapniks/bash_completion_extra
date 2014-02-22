@@ -30,29 +30,34 @@
 # but should be called by another completion function.
 #
 # @param $1  The directory to start in.
-# @param $2  A regular expression matching filenames/dirs to keep in the completions
-#            (after first param has been removed from their pathnames)
-# @param $3  A regular expression matching filenames/dirs to remove from the completions
-#            (after first param has been removed from their pathnames)
+# @param $2  A quoted regular expression matching filenames/dirs to keep in the completions
+#            (after first param has been removed from their pathnames).
+# @param $3  A quoted regular expression matching filenames/dirs to remove from the completions
+#            (after first param has been removed from their pathnames).
+# @param $4  The maximum depth allowed (below the starting directory) for completions.
 #
 # EXAMPLE 
-#     complete jpeg files and non-hidden directories within ~/temp: _firedir_rooted ~/temp "(.jpg|.JPG|/)$" "^\."
-
+#     complete jpeg files and non-hidden directories within ~/temp at depth <= 2:
+#                _firedir_rooted ~/temp "(.jpg|.JPG|/)$" "^\." 2
 _filedir_rooted_filtered()
 {
     #debugme set -x
-    local i IFS=$'\n' cur="${COMP_WORDS[COMP_CWORD]}" 
+    local i IFS=$'\n' cur="${COMP_WORDS[COMP_CWORD]}" slashes
     _tilde "$cur" || return 0
-    local -a all all2 all3 i elem
-    # Make sure arrays are all empty initially
-    all = ()
-    all2 = ()
-    all3 = ()
-    local quoted
+    local -a dirs files files2 all all2 all3 i elem
+    local quoted 
     # _quote_readline_by_ref should be defined in /etc/bash_completion
     _quote_readline_by_ref "$1/$cur" quoted
-
-    all=( $( compgen -f -- "$quoted" ) )
+    # count the number of /'s in the current completion and check
+    # it is less than the specified amount
+    slashes="${cur//[^\/]}"
+    if [[ -z "$4" ]] || [[ "${#slashes}" < "$4" ]]; then
+        all=( $( compgen -f -- "$quoted" ) )
+    else
+        all=()
+        all2=()
+        all3=()
+    fi
     # Add / to end of directory names
     for (( i = 0 ; i < "${#all[@]}" ; i++ )); do
         if [[ -d "${all[$i]}" ]]; then
